@@ -1,0 +1,96 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.javamodularity.moduleplugin' version '1.8.12'
+    id 'org.openjfx.javafxplugin' version '0.0.13'
+    id 'com.github.johnrengelman.shadow' version '8.1.1' // Shadow плагин
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    junitVersion = '5.10.2'
+    javafxVersion = '17' // Версия JavaFX SDK
+}
+
+sourceCompatibility = '17'
+targetCompatibility = '17'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+application {
+    mainModule = 'org.example.kursovaya'
+    mainClass = 'org.example.kursovaya.Main'
+}
+
+// Указываем путь к JavaFX зависимости через Maven Central
+javafx {
+    version = javafxVersion
+    modules = ['javafx.controls', 'javafx.fxml']
+}
+
+dependencies {
+    // Зависимости для JDBC, Log4j, JSON
+    implementation 'org.xerial:sqlite-jdbc:3.47.0.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
+    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+
+    // Зависимости JavaFX из Maven Central
+    implementation "org.openjfx:javafx-controls:$javafxVersion"
+    implementation "org.openjfx:javafx-fxml:$javafxVersion"
+
+    // Зависимость для работы с JSON
+    implementation 'org.json:json:20210307'
+
+    // Зависимости для тестирования
+    testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
+    testImplementation 'org.opentest4j:opentest4j:1.2.0'
+    testImplementation 'org.junit.platform:junit-platform-commons:1.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-engine:1.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+}
+
+// Настройка JVM аргументов для JavaFX
+tasks.named('run') {
+    doFirst {
+        jvmArgs += [
+                '--module-path', 'javafx-sdk-17',
+                '--add-modules', 'javafx.controls,javafx.fxml'
+        ]
+    }
+}
+
+// Настройка shadowJar
+shadowJar {
+    archiveClassifier.set('all') // Название итогового jar-файла
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'org.example.kursovaya.Main' // Укажите основной класс
+    }
+    from('src/main/resources') {
+        into('resources')
+    }
+}
+
+// Настройка Javadoc
+tasks.javadoc {
+    options {
+        // Указываем модульный путь для Javadoc
+        addStringOption('--module-path', 'lib/javafx-sdk-17/lib') // Укажите путь к JavaFX SDK, если он локален
+        addStringOption('--add-modules', 'javafx.controls,javafx.fxml')
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
